@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <title>Rstate basic example</title>
+    <!-- <script src="https://unpkg.com/rxjs@5.4.2/bundles/Rx.min.js"></script> -->
+    <script src="../../dist/bundle/rstate.js"></script>
+  </head>
+
+  <body>
+    <div>
+      <p>
+        Clicked: <span id="value">0</span> times
+        <button id="increment">+</button>
+        <button id="decrement">-</button>
+        <button id="incrementIfOdd">Increment if odd</button>
+        <button id="incrementAsync">Increment async</button>
+      </p>
+    </div>
+    <script>
+      const counter = {
+        INCREMENT(state, action) {
+          return state + 1;
+        },
+        DECREMENT(state, action) {
+          return state - 1;
+        },
+        INCREMENT_IF_ODD(state, action, dispatch) {
+          if (state % 2 !== 0) {
+            dispatch({ type: 'INCREMENT' })
+          }
+        },
+        INCREMENT_ASYNC(state, action, dispatch) {
+          setTimeout(() => {
+            dispatch({ type: 'INCREMENT' })
+          }, 3000);
+        },
+        ANOTHER_ONE(state, action, dispatch){
+          dispatch({ type: 'DECREMENT' })
+        }
+      };
+
+
+      var store = Rstate.createStore(counter, 0)
+      var valueEl = document.getElementById('value')
+
+      // gets current state as argument, but you can always use store.getState()
+      function render(state) {
+        valueEl.innerHTML = state.toString()
+      }
+
+      // render()
+      // initial render is unnecessary because state is a Behavior Subject. it has an initial value
+
+      store.subscribe(render) // like Redux
+
+      // or access the state Observable
+      // store.state.subscribe(render)
+
+      document.getElementById('increment')
+        .addEventListener('click', function() {
+          store.dispatch({ type: 'INCREMEN' })
+        })
+
+      document.getElementById('decrement')
+        .addEventListener('click', function() {
+          store.dispatch({ type: 'DECREMENT' })
+        })
+
+      document.getElementById('incrementIfOdd')
+        .addEventListener('click', function() {
+          store.dispatch({ type: 'INCREMENT_IF_ODD' })
+        })
+
+      document.getElementById('incrementAsync')
+        .addEventListener('click', function() {
+          store.dispatch({ type: 'INCREMENT_ASYNC' });
+        })
+    </script>
+  </body>
+
+</html>
