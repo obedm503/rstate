@@ -6,7 +6,10 @@
   ],
   "jsRules": {},
   "rules": {
-    "member-ordering": "off",
+    "interface-name": [
+      false
+    ],
+    "member-ordering": [false],
     "no-invalid-this": true,
     "object-key-spacing": [
       true,

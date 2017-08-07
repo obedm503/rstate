@@ -1,3 +1,7 @@
 tsconfig.json
 rollup.config.js
 test/
+examples/
+test/
+src/
+.*
