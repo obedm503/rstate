@@ -13,11 +13,11 @@ export interface Store {
 }
 
 export function createStore( handlers: object, initialState: any, enhancer? ): Store {
-  if ( typeof handlers === 'undefined' ){
+  if( typeof handlers === 'undefined' ){
     throw new Error( 'Rstate: no action handlers provided' );
   }
 
-  if ( typeof enhancer !== 'undefined' ) {
+  if( typeof enhancer !== 'undefined' ){
     if ( typeof enhancer !== 'function' ) {
       throw new Error( 'Expected the enhancer to be a function.' );
     }
@@ -25,18 +25,17 @@ export function createStore( handlers: object, initialState: any, enhancer? ): S
     return enhancer( createStore )( handlers, initialState );
   }
   const state$: BehaviorSubject<any> = new BehaviorSubject( initialState );
-  const state: Observable<any> = state$.asObservable();
-  // redux-like api
-  const subscribe: ( observer: ( state: any ) => void ) => Subscription = state.subscribe.bind( state );
 
   function dispatch( action: { type: string }): { type: string } {
-    if ( typeof action === 'undefined' ) { throw new Error( 'No Action Given' ); }
+    if ( typeof action === 'undefined' || typeof action.type === 'undefined' ){
+      throw new Error( 'No Action Given' );
+    }
 
     const handlerKeys = Object.keys( handlers );
     const currentHandlers = handlerKeys
       .filter( key => key === action.type || ( key.startsWith( action.type ) && key[action.type.length] === '@' ) );
 
-    if ( currentHandlers.length === 0 ) {
+    if( currentHandlers.length === 0 ){
       const handlerNames = handlerKeys.map( name => `  "${name}"` ).join( ', \n' );
       throw new Error(
         `Action handler of type "${action.type}" does not exist.\n` +
@@ -64,10 +63,10 @@ export function createStore( handlers: object, initialState: any, enhancer? ): S
           dispatch( a );
         },
       );
-      if ( typeof newState === 'undefined' ) {
+      if( typeof newState === 'undefined' ){
         continue;
       }
-      if ( dispatched ) {
+      if( dispatched ){
         throw new Error(
           `"${key}": You may not return new state AND dispatch in the same handler.\n` +
           'Consider dividing your logic between a Procedure and a Reducer.',
@@ -96,6 +95,9 @@ export function createStore( handlers: object, initialState: any, enhancer? ): S
     };
   }
 
+  const state: Observable<any> = state$.asObservable();
+  // redux-like api
+  const subscribe: ( observer: ( state: any ) => void ) => Subscription = state.subscribe.bind( state );
   return {
     state,
     getState,
