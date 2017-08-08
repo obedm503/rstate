@@ -1,6 +1,7 @@
-dist
-es
-lib
+dist/
+es/
+lib/
+test/
 
 # Logs
 logs
@@ -14,5 +15,3 @@ node_modules
 # Optional npm cache directory
 .npm
 
-# Test js files
-test/dist/
