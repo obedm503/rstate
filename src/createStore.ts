@@ -4,12 +4,16 @@ import { Observable } from "rxjs/Observable";
 import { Subscription } from "rxjs/Subscription";
 import { set, get } from 'dot-prop-immutable';
 
+export interface Action {
+  type: string;
+}
+
 export interface Store {
   state: Observable<any>;
   subscribe: ( observer: ( state: any ) => void ) => Subscription;
-  dispatch: ( action: { type: string }) => { type: string };
+  dispatch: <A extends Action>( action: A ) => A;
   getState: () => any;
-  replaceHandlers: ( object ) => void;
+  replaceHandlers: ( newHandlers: object ) => void;
 }
 
 export function createStore( handlers: object, initialState: any, enhancer? ): Store {
@@ -26,7 +30,7 @@ export function createStore( handlers: object, initialState: any, enhancer? ): S
   }
   const state$: BehaviorSubject<any> = new BehaviorSubject( initialState );
 
-  function dispatch( action: { type: string }): { type: string } {
+  function dispatch<A extends Action>( action: A ): A {
     if ( typeof action === 'undefined' || typeof action.type === 'undefined' ){
       throw new Error( 'No Action Given' );
     }
@@ -38,23 +42,28 @@ export function createStore( handlers: object, initialState: any, enhancer? ): S
     if( currentHandlers.length === 0 ){
       const handlerNames = handlerKeys.map( name => `  "${name}"` ).join( ', \n' );
       throw new Error(
-        `Action handler of type "${action.type}" does not exist.\n` +
+        `Action handlers of type "${action.type}" do not exist.\n` +
         'It is possible that you mispelled the action type.\n\n' +
         'The currently registered action types are: \n' +
         `${handlerNames}\n`,
       );
     }
 
+    // reduce state to it's new value and call state$.next just once per dispatch
+    // to get better performace, instead of calling state$.next for each handler
+    let finalState = getState();
+    const beginningState = finalState;
     let i = currentHandlers.length;
     while ( i-- ) {
       const key = currentHandlers[i];
+      const dotPropKey = key.split( '@' )[1];
+      const handlerState = dotPropKey ? get( finalState, dotPropKey ) : finalState;
+
       const handler = handlers[key];
-      const stateKey = key.split( '@' )[1];
-      const currentState = stateKey ? get( getState(), stateKey ) : getState();
       let dispatched = false;
       const newState = handler(
         // current state
-        currentState,
+        handlerState,
         // action dispatched
         action,
         // dispatch()
@@ -72,7 +81,12 @@ export function createStore( handlers: object, initialState: any, enhancer? ): S
           'Consider dividing your logic between a Procedure and a Reducer.',
         );
       }
-      state$.next( stateKey ? set( getState(), stateKey, newState ) : newState );
+      finalState = dotPropKey ? set( finalState, dotPropKey, newState ) : newState;
+    }
+    // it is possible that none of the handlers updated the state so check if
+    // state changed after all the reducing
+    if( finalState !== beginningState ){
+      state$.next( finalState );
     }
 
     return action;
