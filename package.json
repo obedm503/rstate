@@ -1,7 +1,7 @@
 {
   "name": "rstate",
   "version": "0.2.5",
-  "description": "Library description",
+  "description": "another reactive state container inspired by redux and state management outside of react",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
   "module": "./es/index.js",
