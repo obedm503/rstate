@@ -2,19 +2,20 @@ import { isObject } from "./util";
 
 /**
  * based on https://coderwall.com/p/w22s0w/recursive-merge-flatten-objects-in-plain-old-vanilla-javascript
- *
+ * @example
+ * ```javascript
  * {
  *   INCREMENT_MESSAGE_COUNT(){},
  *   users: {
  *     ADD_USER(){}
  *   }
  * }
- * =>
+ * // =>
  * {
  *   INCREMENT_MESSAGE_COUNT(){},
  *   ADD_USER@users(){}
  * }
- *
+ * ```
  * @export
  * @param {object} obj
  * @returns {object}

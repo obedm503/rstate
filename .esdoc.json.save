@@ -1,0 +1,8 @@
+{
+  "source": "./src",
+  "destination": "./doc",
+  "excludes": "["\\.config\\.js$"]	"
+  "plugins": [
+    {"name": "esdoc-typescript-plugin", "option": {"enable": true}}
+  ]
+}
