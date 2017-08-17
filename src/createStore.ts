@@ -2,21 +2,29 @@ import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 import { Subject } from 'rxjs/Subject';
 import { Observable } from "rxjs/Observable";
 import { Subscription } from "rxjs/Subscription";
+import { Subscriber } from "rxjs/Subscriber";
 import { set, get } from 'dot-prop-immutable';
 
 export interface Action {
   type: string;
 }
-
-export interface Store {
-  state: Observable<any>;
-  subscribe: ( observer: ( state: any ) => void ) => Subscription;
-  dispatch: <A extends Action>( action: A ) => A;
-  getState: () => any;
-  replaceHandlers: ( newHandlers: object ) => void;
+export type Dispatch = <A extends Action>( action: A ) => A;
+export type Reducer<T> = <A extends Action>( state: T, action: A ) => T;
+export type Procedure<T> = <A extends Action>( state: T, action: A, dispatch: Dispatch ) => void;
+export type Handler<T> = Reducer<T> & Procedure<T>;
+export interface Handlers<T> {
+  [actionType: string]: Handler<T>;
 }
 
-export function createStore( handlers: object, initialState: any, enhancer? ): Store {
+export interface Store<S> {
+  state: Observable<S>;
+  subscribe: ( subscriber: Subscriber<S> ) => Subscription;
+  dispatch: Dispatch;
+  getState: () => S;
+  replaceHandlers: ( newHandlers: Handlers<S> ) => void;
+}
+
+export function createStore<S>( handlers: Handlers<S>, initialState: S, enhancer? ): Store<S> {
   if( typeof handlers === 'undefined' ){
     throw new Error( 'Rstate: no action handlers provided' );
   }
@@ -44,8 +52,9 @@ export function createStore( handlers: object, initialState: any, enhancer? ): S
       throw new Error(
         `Action handlers of type "${action.type}" do not exist.\n` +
         'It is possible that you mispelled the action type.\n\n' +
-        'The currently registered action types are: \n' +
-        `${handlerNames}\n`,
+        ( handlerKeys.length )
+        ? 'There are no registered action types.'
+        : `The currently registered action types are: \n${handlerNames}\n`,
       );
     }
 
@@ -57,7 +66,14 @@ export function createStore( handlers: object, initialState: any, enhancer? ): S
     while ( i-- ) {
       const key = currentHandlers[i];
       const dotPropKey = key.split( '@' )[1];
-      const handlerState = dotPropKey ? get( finalState, dotPropKey ) : finalState;
+      const handlerState: S = dotPropKey ? get( finalState, dotPropKey ) as S : finalState;
+
+      if( typeof handlerState === 'undefined' ){
+        throw new Error(
+          `It seems you forgot to define the initial state at "state.${dotPropKey}"` +
+          `when the action "${action.type}" was dispatched`,
+        );
+      }
 
       const handler = handlers[key];
       let dispatched = false;
@@ -69,7 +85,7 @@ export function createStore( handlers: object, initialState: any, enhancer? ): S
         // dispatch()
         a => {
           dispatched = true;
-          dispatch( a );
+          return dispatch( a );
         },
       );
       if( typeof newState === 'undefined' ){
@@ -93,13 +109,13 @@ export function createStore( handlers: object, initialState: any, enhancer? ): S
   }
 
   // redux-like api
-  function getState() {
+  function getState(): S {
     return state$.getValue();
   }
 
   // redux-like api
   // instead of replaceReducers
-  function replaceHandlers( newHandlers: object ): void {
+  function replaceHandlers( newHandlers: Handlers<S> ): void {
     if( typeof newHandlers === 'undefined' ){
       throw new Error( 'you can\'t replace old handlers with nothing.' );
     }
@@ -109,9 +125,9 @@ export function createStore( handlers: object, initialState: any, enhancer? ): S
     };
   }
 
-  const state: Observable<any> = state$.asObservable();
+  const state: Observable<S> = state$.asObservable();
   // redux-like api
-  const subscribe: ( observer: ( state: any ) => void ) => Subscription = state.subscribe.bind( state );
+  const subscribe: ( subscriber: Subscriber<S> ) => Subscription = state.subscribe.bind( state );
   return {
     state,
     getState,
