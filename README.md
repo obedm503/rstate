@@ -1,3 +1,25 @@
+## Intended Dataflow
+Pure Handler Cycle (Reducer Cycle): `(ACTION) --> reducer --> (STATE)`
+
+Impure Handler Cycle (Procedure Cycle): `(ACTION) --> procedure --> (ACTION)`
+
+
+```
+ +------------------------------------------------------------------------------+
+ |                                                                              |
+ |                                                                              |
+ v                            +----->   Reducer   +-----> (STATE) +--->  STORE  +
+                              |
+VIEW  +------> (ACTION) +-----+
+                              |
+                   ^          +----->  Procedure  +-----> (SIDE EFFECT)  +
+                   |                                                     |
+                   |                                                     |
+                   +-----------------------------------------------------+
+
+```
+
+
 ### License
 
 The MIT License (MIT)
